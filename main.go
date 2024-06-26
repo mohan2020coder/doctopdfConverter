@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -36,6 +37,9 @@ func main() {
 
 	// Load HTML templates
 	r.LoadHTMLGlob("templates/*.html")
+
+	// Serve static files from the "output" directory
+	r.Static("/output", "./output")
 
 	// Ensure directories exist
 	ensureDir("uploads")
@@ -185,27 +189,34 @@ func uploadFile(c *gin.Context) {
 	}
 
 	// Save the uploaded file
-	filepath := "uploads/" + file.Filename
-	if err := c.SaveUploadedFile(file, filepath); err != nil {
+	uploadPath := "uploads/" + file.Filename
+	if err := c.SaveUploadedFile(file, uploadPath); err != nil {
 		c.String(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
 		return
 	}
 
 	// Determine file type
-	fileType := determineFileType(filepath)
+	fileType := determineFileType(uploadPath)
 
-	// Convert to PDF
-	outputFilename := "output/" + file.Filename + ".pdf"
-	if err := convertToPDF(filepath, outputFilename, fileType); err != nil {
+	// Get the base filename without the extension
+	fileExt := filepath.Ext(file.Filename)
+	baseFilename := strings.TrimSuffix(file.Filename, fileExt)
+	outputFilename := "output/" + baseFilename + ".pdf"
+
+	// Perform the conversion
+	if err := convertToPDF(uploadPath, outputFilename, fileType); err != nil {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("conversion error: %v", err))
 		return
 	}
 
 	// Save file details to database
-	db.Create(&File{
+	if err := db.Create(&File{
 		FileName: file.Filename,
 		FileType: fileType,
-	})
+	}).Error; err != nil {
+		c.String(http.StatusInternalServerError, fmt.Sprintf("database error: %v", err))
+		return
+	}
 
 	// Redirect back to index page
 	c.Redirect(http.StatusSeeOther, "/")

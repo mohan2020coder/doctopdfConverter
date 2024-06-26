@@ -38,11 +38,15 @@
 
     <!-- JavaScript -->
     <script>
-        function showModal(filename) {
+       function showModal(filename) {
             const modal = document.getElementById('fileModal');
             modal.style.display = 'block';
+            
+            // Extract the base filename without the extension
+            const baseFilename = filename.substring(0, filename.lastIndexOf('.'));
+            
             const pdfViewer = document.getElementById('pdfViewer');
-            pdfViewer.src = '/output/' + filename + '.pdf';
+            pdfViewer.src = '/output/' + baseFilename + '.pdf';
         }
 
         function closeModal() {
