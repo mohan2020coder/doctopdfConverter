@@ -72,7 +72,7 @@ func ensureDir(dirName string) {
 func convertToPDF(inputFile, outputFile string, fileType string) error {
 	switch fileType {
 	case "docx", "pptx":
-		cmd := exec.Command("libreoffice", "--headless", "--convert-to", "pdf", "--outdir", "./output", inputFile)
+		cmd := exec.Command("soffice", "--headless", "--convert-to", "pdf", "--outdir", "./output", inputFile)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		return cmd.Run()
